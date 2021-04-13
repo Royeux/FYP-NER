@@ -123,6 +123,7 @@ mapping_file = "models/mapping.pkl"
 models_path = "models/"
 model_name = models_path + name  # get_name(parameters)
 tmp_model = model_name + ".tmp"
+training_epochs = 20
 
 
 # def evaluating_with_sklearn(model, datas, best_F=0):
@@ -248,16 +249,17 @@ def evaluating(model, datas, best_F):
                 save = True
                 print('the best F is ', new_F)
 
-    print(("{: >2}{: >7}{: >7}%s{: >9}" % ("{: >7}" * confusion_matrix.size(0))).format(
-        "ID", "NE", "Total",
-        *([id_to_tag[i] for i in range(confusion_matrix.size(0))] + ["Percent"])
-    ))
-    for i in range(confusion_matrix.size(0)):
-        print(("{: >2}{: >7}{: >7}%s{: >9}" % ("{: >7}" * confusion_matrix.size(0))).format(
-            str(i), id_to_tag[i], str(confusion_matrix[i].sum().item()),
-            *([confusion_matrix[i][j] for j in range(confusion_matrix.size(0))] +
-              ["%.3f" % (confusion_matrix[i][i] * 100. / max(1, confusion_matrix[i].sum()))])
-        ))
+    # print training confusion matrix
+    # print(("{: >2}{: >7}{: >7}%s{: >9}" % ("{: >7}" * confusion_matrix.size(0))).format(
+    #     "ID", "NE", "Total",
+    #     *([id_to_tag[i] for i in range(confusion_matrix.size(0))] + ["Percent"])
+    # ))
+    # for i in range(confusion_matrix.size(0)):
+    #     print(("{: >2}{: >7}{: >7}%s{: >9}" % ("{: >7}" * confusion_matrix.size(0))).format(
+    #         str(i), id_to_tag[i], str(confusion_matrix[i].sum().item()),
+    #         *([confusion_matrix[i][j] for j in range(confusion_matrix.size(0))] +
+    #           ["%.3f" % (confusion_matrix[i][i] * 100. / max(1, confusion_matrix[i].sum()))])
+    #     ))
     print()
     return best_F, new_F, save
 
@@ -275,12 +277,14 @@ def train():
     plot_every = 100
     eval_every = 200
     count = 0
-    vis = visdom.Visdom()
+    # vis = visdom.Visdom()
     sys.stdout.flush()
 
     model.train(True)
 
-    for epoch in range(1, 100):
+
+    for epoch in range(0, training_epochs):
+        print("\n********************************************* Epoch number: " + str(epoch + 1) + " *********************************************\n")
         for iter, index in enumerate(tqdm(np.random.permutation(len(train_data)))):
             data = train_data[index]
             model.zero_grad()
@@ -340,19 +344,19 @@ def train():
                 if losses == []:
                     losses.append(loss)
                 losses.append(loss)
-                text = "<p>" + "</p><p>".join([str(l) for l in losses[-9:]]) + "</p>"
-                losswin = "loss_" + name
-                textwin = "loss_text_" + name
-                vis.line(
-                    np.array(losses),
-                    X=np.array([plot_every * i for i in range(len(losses))]),
-                    win=losswin,
-                    opts={
-                        "title": losswin,
-                        "legend": ["loss"]
-                    },
-                )
-                vis.text(text, win=textwin, opts={"title": textwin})
+                # text = "<p>" + "</p><p>".join([str(l) for l in losses[-9:]]) + "</p>"
+                # losswin = "loss_" + name
+                # textwin = "loss_text_" + name
+                # vis.line(
+                #     np.array(losses),
+                #     X=np.array([plot_every * i for i in range(len(losses))]),
+                #     win=losswin,
+                #     opts={
+                #         "title": losswin,
+                #         "legend": ["loss"]
+                #     },
+                # )
+                # vis.text(text, win=textwin, opts={"title": textwin})
                 loss = 0.0
 
             if (count % (eval_every) == 0 and count > (eval_every * 20) or count % (eval_every * 4) == 0 and count <
@@ -367,15 +371,15 @@ def train():
 
                 all_F.append([new_train_F, new_dev_F, new_test_F])
                 Fwin = "F-score of {train, dev, test}_" + name
-                vis.line(
-                    np.array(all_F),
-                    win=Fwin,
-                    X=np.array([eval_every * i for i in range(len(all_F))]),
-                    opts={
-                        "title": Fwin,
-                        "legend": ["train", "dev", "test"]
-                    },
-                )
+                # vis.line(
+                #     np.array(all_F),
+                #     win=Fwin,
+                #     X=np.array([eval_every * i for i in range(len(all_F))]),
+                #     opts={
+                #         "title": Fwin,
+                #         "legend": ["train", "dev", "test"]
+                #     },
+                # )
                 model.train(True)
 
             if count % len(train_data) == 0:
